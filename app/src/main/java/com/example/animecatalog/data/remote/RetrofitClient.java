@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "https://a00673fc-71ab-4c18-9eb8-b367aed9916d.mock.pstmn.io/";
+    private static final String BASE_URL = "https://998a45eb-536a-4a32-a800-d71f7164cf21.mock.pstmn.io/";
     private static Retrofit retrofit;
 
     public static Retrofit getClient() {
