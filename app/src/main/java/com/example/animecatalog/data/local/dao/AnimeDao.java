@@ -28,6 +28,20 @@ public interface AnimeDao {
     @Query("SELECT * FROM anime WHERE title LIKE '%' || :query || '%'")
     LiveData<List<AnimeEntity>> searchAnime(String query);
 
+    @Query("SELECT * FROM anime WHERE genres LIKE '%' || :genre || '%'")
+    LiveData<List<AnimeEntity>> getAnimeByGenre(String genre);
+
+    @Query("SELECT * FROM anime WHERE title LIKE '%' || :query || '%' AND genres LIKE '%' || :genre || '%'")
+    LiveData<List<AnimeEntity>> searchAnimeByTitleAndGenre(String query, String genre);
+
+    // Универсальный метод фильтрации
+    // Проверяем каждое условие: если параметр пустой, то условие игнорируется (возвращает true)
+    @Query("SELECT * FROM anime WHERE " +
+           "(:query IS NULL OR :query = '' OR title LIKE '%' || :query || '%') AND " +
+           "(:type IS NULL OR :type = '' OR type = :type) AND " +
+           "(:genre IS NULL OR :genre = '' OR genres LIKE '%' || :genre || '%')")
+    LiveData<List<AnimeEntity>> getFilteredAnime(String query, String type, String genre);
+
     @Query("DELETE FROM anime")
     void deleteAll();
 }

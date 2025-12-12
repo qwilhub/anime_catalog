@@ -4,6 +4,7 @@ import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import com.example.animecatalog.data.local.entity.AnimeEntity;
@@ -16,10 +17,28 @@ public class CatalogViewModel extends AndroidViewModel {
     private MutableLiveData<String> searchQuery = new MutableLiveData<>("");
     private MutableLiveData<String> typeFilter = new MutableLiveData<>("");
     private MutableLiveData<String> genreFilter = new MutableLiveData<>("");
+    private LiveData<List<AnimeEntity>> searchResults;
 
     public CatalogViewModel(@NonNull Application application) {
         super(application);
         repository = new AnimeRepository(application);
+
+        // Объединяем сигналы изменений для обновления результатов поиска
+        MediatorLiveData<Void> filterTrigger = new MediatorLiveData<>();
+        filterTrigger.setValue(null);
+        
+        filterTrigger.addSource(searchQuery, x -> filterTrigger.setValue(null));
+        filterTrigger.addSource(genreFilter, x -> filterTrigger.setValue(null));
+        filterTrigger.addSource(typeFilter, x -> filterTrigger.setValue(null)); // Добавляем typeFilter
+
+        searchResults = Transformations.switchMap(filterTrigger, x -> {
+            String query = searchQuery.getValue();
+            String genre = genreFilter.getValue();
+            String type = typeFilter.getValue();
+
+            // Используем универсальный метод фильтрации
+            return repository.getFilteredAnime(query, type, genre);
+        });
     }
 
     public LiveData<Resource<List<AnimeEntity>>> loadAnime() {
@@ -35,13 +54,7 @@ public class CatalogViewModel extends AndroidViewModel {
     }
 
     public LiveData<List<AnimeEntity>> getSearchResults() {
-        return Transformations.switchMap(searchQuery, query -> {
-            if (query == null || query.isEmpty()) {
-                return repository.getAllAnime();
-            } else {
-                return repository.searchAnime(query);
-            }
-        });
+        return searchResults;
     }
 
     public LiveData<Resource<List<String>>> getGenres() {
@@ -49,15 +62,24 @@ public class CatalogViewModel extends AndroidViewModel {
     }
 
     public void setSearchQuery(String query) {
-        searchQuery.setValue(query);
+        if ((searchQuery.getValue() == null && query != null) || 
+            (searchQuery.getValue() != null && !searchQuery.getValue().equals(query))) {
+            searchQuery.setValue(query);
+        }
     }
 
     public void setTypeFilter(String type) {
-        typeFilter.setValue(type);
+        if ((typeFilter.getValue() == null && type != null) || 
+            (typeFilter.getValue() != null && !typeFilter.getValue().equals(type))) {
+            typeFilter.setValue(type);
+        }
     }
 
     public void setGenreFilter(String genre) {
-        genreFilter.setValue(genre);
+        if ((genreFilter.getValue() == null && genre != null) || 
+            (genreFilter.getValue() != null && !genreFilter.getValue().equals(genre))) {
+            genreFilter.setValue(genre);
+        }
     }
 
     public String getCurrentSearchQuery() {
