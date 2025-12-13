@@ -2,9 +2,6 @@ package com.example.animecatalog;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.animecatalog.databinding.ActivityMainBinding;
 import com.example.animecatalog.ui.auth.LoginActivity;
@@ -24,15 +21,7 @@ public class MainActivity extends AppCompatActivity {
 
         prefsManager = new SharedPrefsManager(this);
 
-        setupToolbar();
         setupClickListeners();
-    }
-
-    private void setupToolbar() {
-        setSupportActionBar(binding.toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Anime Catalog");
-        }
     }
 
     private void setupClickListeners() {
@@ -43,21 +32,11 @@ public class MainActivity extends AppCompatActivity {
         binding.cardFavorites.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, FavoritesActivity.class));
         });
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_logout) {
+        
+        // Обработчик кнопки выхода
+        binding.ivLogout.setOnClickListener(v -> {
             logout();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        });
     }
 
     private void logout() {

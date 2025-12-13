@@ -36,6 +36,7 @@ public class CatalogActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(CatalogViewModel.class);
 
+        setupUI();
         setupRecyclerView();
         setupSearchView();
         setupFilters();
@@ -45,6 +46,11 @@ public class CatalogActivity extends AppCompatActivity {
         
         // Загружаем данные с сервера
         loadAnime();
+    }
+    
+    private void setupUI() {
+        // Настройка кнопки назад
+        binding.btnBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
     }
 
     private void setupRecyclerView() {

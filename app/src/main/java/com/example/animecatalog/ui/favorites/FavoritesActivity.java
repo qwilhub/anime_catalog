@@ -27,18 +27,14 @@ public class FavoritesActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(FavoritesViewModel.class);
 
-        setupToolbar();
+        setupUI();
         setupRecyclerView();
         observeFavorites();
     }
 
-    private void setupToolbar() {
-        setSupportActionBar(binding.toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("My Favorites");
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }
-        binding.toolbar.setNavigationOnClickListener(v -> finish());
+    private void setupUI() {
+        // Обработка кнопки "Назад"
+        binding.btnBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
     }
 
     private void setupRecyclerView() {
@@ -116,7 +112,8 @@ public class FavoritesActivity extends AppCompatActivity {
     }
 
     private void showEmpty(boolean show) {
-        binding.tvEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
+        // Мы используем layoutEmpty, так как в новом макете это контейнер с иконкой и текстом
+        binding.layoutEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.recyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 }
