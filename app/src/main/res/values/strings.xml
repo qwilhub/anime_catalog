@@ -1,10 +1,5 @@
 <resources>
     <string name="app_name">Anime Catalog</string>
-    <string name="login">Login</string>
-    <string name="register">Register</string>
-    <string name="email">Email</string>
-    <string name="password">Password</string>
-    <string name="username">Username</string>
     <string name="catalog">Catalog</string>
     <string name="favorites">Favorites</string>
     <string name="search_hint">Search anime...</string>

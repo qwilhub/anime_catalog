@@ -5,11 +5,6 @@ import retrofit2.Call;
 import retrofit2.http.*;
 
 public interface AnimeApiService {
-    @POST("api/auth/register")
-    Call<AuthResponse> register(@Body RegisterRequest request);
-
-    @POST("api/auth/login")
-    Call<AuthResponse> login(@Body LoginRequest request);
 
     @GET("api/anime")
     Call<AnimeResponse> getAnime(
