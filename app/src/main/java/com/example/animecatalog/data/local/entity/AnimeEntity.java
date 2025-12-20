@@ -9,7 +9,7 @@ import java.util.List;
 @Entity(tableName = "anime")
 @TypeConverters(StringListConverter.class)
 public class AnimeEntity {
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     private int id;
     private String title;
     private String titleJapanese;

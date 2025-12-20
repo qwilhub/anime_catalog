@@ -47,12 +47,8 @@ public class AnimeRepository {
                     }
 
                     executorService.execute(() -> {
-                        // Для упрощения, если фильтры не заданы, очищаем базу
-                        if ((search == null || search.isEmpty()) && 
-                            (type == null || type.isEmpty()) && 
-                            (genre == null || genre.isEmpty())) {
-                            animeDao.deleteAll();
-                        }
+                        // Не удаляем всё, чтобы сохранить локально добавленные аниме
+                        // Используем insertAll, который заменит существующие (REPLACE)
                         animeDao.insertAll(entities);
                     });
 
@@ -83,24 +79,21 @@ public class AnimeRepository {
         return animeDao.getFavorites();
     }
 
-    public LiveData<List<AnimeEntity>> searchAnime(String query) {
-        return animeDao.searchAnime(query);
-    }
-
-    public LiveData<List<AnimeEntity>> getAnimeByGenre(String genre) {
-        return animeDao.getAnimeByGenre(genre);
-    }
-
-    public LiveData<List<AnimeEntity>> searchAnimeByTitleAndGenre(String query, String genre) {
-        return animeDao.searchAnimeByTitleAndGenre(query, genre);
-    }
-    
     public LiveData<List<AnimeEntity>> getFilteredAnime(String query, String type, String genre) {
         return animeDao.getFilteredAnime(query, type, genre);
     }
 
+    // Локальные CRUD операции
+    public void addAnime(AnimeEntity anime) {
+        executorService.execute(() -> animeDao.insert(anime));
+    }
+
     public void updateAnime(AnimeEntity anime) {
         executorService.execute(() -> animeDao.update(anime));
+    }
+
+    public void deleteAnime(AnimeEntity anime) {
+        executorService.execute(() -> animeDao.delete(anime));
     }
 
     public LiveData<Resource<List<String>>> getGenres() {

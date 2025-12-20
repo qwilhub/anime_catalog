@@ -8,6 +8,7 @@
     <!-- Background Colors -->
     <color name="background">#F5F5F5</color>
     <color name="surface">#FFFFFF</color>
+    <color name="divider">#BDBDBD</color>
 
     <!-- Text Colors -->
     <color name="textPrimary">#212121</color>

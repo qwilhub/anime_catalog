@@ -9,7 +9,7 @@ import com.example.animecatalog.data.local.converter.StringListConverter;
 import com.example.animecatalog.data.local.dao.AnimeDao;
 import com.example.animecatalog.data.local.entity.AnimeEntity;
 
-@Database(entities = {AnimeEntity.class}, version = 2, exportSchema = false)
+@Database(entities = {AnimeEntity.class}, version = 3, exportSchema = false)
 @TypeConverters(StringListConverter.class)
 public abstract class AppDatabase extends RoomDatabase {
     private static AppDatabase instance;

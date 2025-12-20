@@ -17,6 +17,7 @@ public class AnimeAdapter extends RecyclerView.Adapter<AnimeAdapter.AnimeViewHol
 
     public interface OnAnimeClickListener {
         void onAnimeClick(AnimeEntity anime);
+        void onAnimeLongClick(AnimeEntity anime);
     }
 
     public AnimeAdapter(OnAnimeClickListener listener) {
@@ -69,6 +70,13 @@ public class AnimeAdapter extends RecyclerView.Adapter<AnimeAdapter.AnimeViewHol
                 if (listener != null) {
                     listener.onAnimeClick(anime);
                 }
+            });
+
+            binding.getRoot().setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onAnimeLongClick(anime);
+                }
+                return true;
             });
         }
     }

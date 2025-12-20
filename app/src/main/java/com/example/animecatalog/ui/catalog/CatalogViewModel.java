@@ -23,20 +23,18 @@ public class CatalogViewModel extends AndroidViewModel {
         super(application);
         repository = new AnimeRepository(application);
 
-        // Объединяем сигналы изменений для обновления результатов поиска
         MediatorLiveData<Void> filterTrigger = new MediatorLiveData<>();
         filterTrigger.setValue(null);
         
         filterTrigger.addSource(searchQuery, x -> filterTrigger.setValue(null));
         filterTrigger.addSource(genreFilter, x -> filterTrigger.setValue(null));
-        filterTrigger.addSource(typeFilter, x -> filterTrigger.setValue(null)); // Добавляем typeFilter
+        filterTrigger.addSource(typeFilter, x -> filterTrigger.setValue(null));
 
         searchResults = Transformations.switchMap(filterTrigger, x -> {
             String query = searchQuery.getValue();
             String genre = genreFilter.getValue();
             String type = typeFilter.getValue();
 
-            // Используем универсальный метод фильтрации
             return repository.getFilteredAnime(query, type, genre);
         });
     }
@@ -49,10 +47,6 @@ public class CatalogViewModel extends AndroidViewModel {
         );
     }
 
-    public LiveData<List<AnimeEntity>> getAllAnime() {
-        return repository.getAllAnime();
-    }
-
     public LiveData<List<AnimeEntity>> getSearchResults() {
         return searchResults;
     }
@@ -61,36 +55,28 @@ public class CatalogViewModel extends AndroidViewModel {
         return repository.getGenres();
     }
 
+    // Локальные CRUD операции
+    public void addAnime(AnimeEntity anime) {
+        repository.addAnime(anime);
+    }
+
+    public void updateAnime(AnimeEntity anime) {
+        repository.updateAnime(anime);
+    }
+
+    public void deleteAnime(AnimeEntity anime) {
+        repository.deleteAnime(anime);
+    }
+
     public void setSearchQuery(String query) {
-        if ((searchQuery.getValue() == null && query != null) || 
-            (searchQuery.getValue() != null && !searchQuery.getValue().equals(query))) {
-            searchQuery.setValue(query);
-        }
+        searchQuery.setValue(query);
     }
 
     public void setTypeFilter(String type) {
-        if ((typeFilter.getValue() == null && type != null) || 
-            (typeFilter.getValue() != null && !typeFilter.getValue().equals(type))) {
-            typeFilter.setValue(type);
-        }
+        typeFilter.setValue(type);
     }
 
     public void setGenreFilter(String genre) {
-        if ((genreFilter.getValue() == null && genre != null) || 
-            (genreFilter.getValue() != null && !genreFilter.getValue().equals(genre))) {
-            genreFilter.setValue(genre);
-        }
-    }
-
-    public String getCurrentSearchQuery() {
-        return searchQuery.getValue();
-    }
-
-    public String getCurrentTypeFilter() {
-        return typeFilter.getValue();
-    }
-
-    public String getCurrentGenreFilter() {
-        return genreFilter.getValue();
+        genreFilter.setValue(genre);
     }
 }

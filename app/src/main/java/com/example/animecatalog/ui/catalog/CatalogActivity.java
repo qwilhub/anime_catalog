@@ -3,16 +3,24 @@ package com.example.animecatalog.ui.catalog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import com.example.animecatalog.data.local.entity.AnimeEntity;
 import com.example.animecatalog.databinding.ActivityCatalogBinding;
+import com.example.animecatalog.databinding.DialogAddEditAnimeBinding;
+import com.example.animecatalog.databinding.DialogConfirmDeleteBinding;
 import com.example.animecatalog.ui.catalog.adapter.AnimeAdapter;
 import com.example.animecatalog.ui.details.DetailsActivity;
 import com.example.animecatalog.utils.Resource;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.snackbar.Snackbar;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,12 +29,12 @@ public class CatalogActivity extends AppCompatActivity {
     private CatalogViewModel viewModel;
     private AnimeAdapter adapter;
 
-    // Список жанров на случай, если API не вернет список, но мы знаем какие жанры поддерживаются
-    private static final List<String> FALLBACK_GENRES = Arrays.asList(
+    private static final String[] TYPES_ARRAY = {"TV", "Movie", "OVA", "Special", "ONA"};
+    private static final String[] GENRES_ARRAY = {
             "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror",
             "Mystery", "Psychological", "Romance", "Sci-Fi", "Slice of Life",
             "Sports", "Supernatural", "Thriller"
-    );
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,27 +49,126 @@ public class CatalogActivity extends AppCompatActivity {
         setupSearchView();
         setupFilters();
         
-        // Подписываемся на результаты поиска/фильтрации
         observeSearchResults();
-        
-        // Загружаем данные с сервера
         loadAnime();
     }
     
     private void setupUI() {
-        // Настройка кнопки назад
         binding.btnBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        binding.fabAdd.setOnClickListener(v -> showAddEditBottomSheet(null));
     }
 
     private void setupRecyclerView() {
-        adapter = new AnimeAdapter(anime -> {
-            Intent intent = new Intent(CatalogActivity.this, DetailsActivity.class);
-            intent.putExtra("ANIME_ID", anime.getId());
-            startActivity(intent);
+        adapter = new AnimeAdapter(new AnimeAdapter.OnAnimeClickListener() {
+            @Override
+            public void onAnimeClick(AnimeEntity anime) {
+                Intent intent = new Intent(CatalogActivity.this, DetailsActivity.class);
+                intent.putExtra("ANIME_ID", anime.getId());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onAnimeLongClick(AnimeEntity anime) {
+                showOptionsDialog(anime);
+            }
         });
 
         binding.recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         binding.recyclerView.setAdapter(adapter);
+    }
+
+    private void showOptionsDialog(AnimeEntity anime) {
+        String[] options = {"Edit", "Delete"};
+        new AlertDialog.Builder(this)
+                .setTitle(anime.getTitle())
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showAddEditBottomSheet(anime);
+                    } else {
+                        showDeleteConfirmDialog(anime);
+                    }
+                })
+                .show();
+    }
+
+    private void showDeleteConfirmDialog(AnimeEntity anime) {
+        DialogConfirmDeleteBinding deleteBinding = DialogConfirmDeleteBinding.inflate(getLayoutInflater());
+        deleteBinding.tvDeleteMessage.setText("Are you sure you want to delete \"" + anime.getTitle() + "\"? This action cannot be undone.");
+
+        AlertDialog dialog = new AlertDialog.Builder(this, com.google.android.material.R.style.MaterialAlertDialog_MaterialComponents_Title_Icon)
+                .setView(deleteBinding.getRoot())
+                .create();
+
+        deleteBinding.btnCancelDelete.setOnClickListener(v -> dialog.dismiss());
+        deleteBinding.btnConfirmDelete.setOnClickListener(v -> {
+            viewModel.deleteAnime(anime);
+            showSnackbar("Anime deleted");
+            dialog.dismiss();
+        });
+
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        dialog.show();
+    }
+
+    private void showAddEditBottomSheet(AnimeEntity anime) {
+        DialogAddEditAnimeBinding dialogBinding = DialogAddEditAnimeBinding.inflate(getLayoutInflater());
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this, com.google.android.material.R.style.Theme_Design_BottomSheetDialog);
+        bottomSheetDialog.setContentView(dialogBinding.getRoot());
+
+        boolean isEdit = anime != null;
+        dialogBinding.tvDialogTitle.setText(isEdit ? "Edit Anime" : "Add New Anime");
+        dialogBinding.btnSaveAnime.setText(isEdit ? "Update Changes" : "Save Anime");
+
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, TYPES_ARRAY);
+        dialogBinding.actvType.setAdapter(typeAdapter);
+
+        ArrayAdapter<String> genreAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, GENRES_ARRAY);
+        dialogBinding.actvGenre.setAdapter(genreAdapter);
+
+        if (isEdit) {
+            dialogBinding.etTitle.setText(anime.getTitle());
+            dialogBinding.actvType.setText(anime.getType(), false);
+            dialogBinding.etRating.setText(String.valueOf(anime.getRating()));
+            dialogBinding.etEpisodes.setText(String.valueOf(anime.getEpisodes()));
+            dialogBinding.etImageUrl.setText(anime.getImageUrl());
+            if (anime.getGenres() != null && !anime.getGenres().isEmpty()) {
+                dialogBinding.actvGenre.setText(anime.getGenres().get(0), false);
+            }
+        }
+
+        dialogBinding.btnSaveAnime.setOnClickListener(v -> {
+            String title = dialogBinding.etTitle.getText().toString();
+            String type = dialogBinding.actvType.getText().toString();
+            String ratingStr = dialogBinding.etRating.getText().toString();
+            String episodesStr = dialogBinding.etEpisodes.getText().toString();
+            String imageUrl = dialogBinding.etImageUrl.getText().toString();
+            String genre = dialogBinding.actvGenre.getText().toString();
+
+            if (title.isEmpty()) {
+                dialogBinding.etTitle.setError("Title is required");
+                return;
+            }
+
+            AnimeEntity target = isEdit ? anime : new AnimeEntity();
+            target.setTitle(title);
+            target.setType(type);
+            target.setRating(ratingStr.isEmpty() ? 0.0 : Double.parseDouble(ratingStr));
+            target.setEpisodes(episodesStr.isEmpty() ? 0 : Integer.parseInt(episodesStr));
+            target.setImageUrl(imageUrl);
+            if (!genre.isEmpty()) target.setGenres(Arrays.asList(genre));
+
+            if (isEdit) viewModel.updateAnime(target);
+            else viewModel.addAnime(target);
+
+            showSnackbar(isEdit ? "Anime updated" : "Anime added");
+            bottomSheetDialog.dismiss();
+        });
+
+        bottomSheetDialog.show();
+    }
+
+    private void showSnackbar(String message) {
+        Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
     }
 
     private void setupSearchView() {
@@ -82,7 +189,6 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
     private void setupFilters() {
-        // Type filter chips
         List<String> types = Arrays.asList("All", "TV", "Movie", "OVA", "Special");
         for (String type : types) {
             Chip chip = new Chip(this);
@@ -93,27 +199,22 @@ public class CatalogActivity extends AppCompatActivity {
             chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isChecked) {
                     viewModel.setTypeFilter(type.equals("All") ? "" : type);
-                    // Перезагружаем данные с API с новым фильтром типа
-                    loadAnime();
                 }
             });
             binding.chipGroupType.addView(chip);
         }
 
-        // Загружаем жанры
         viewModel.getGenres().observe(this, resource -> {
             if (resource.getStatus() == Resource.Status.SUCCESS && resource.getData() != null && !resource.getData().isEmpty()) {
                 populateGenreChips(resource.getData());
             } else if (resource.getStatus() == Resource.Status.ERROR) {
-                // Если ошибка загрузки жанров, используем локальный список
-                populateGenreChips(FALLBACK_GENRES);
+                populateGenreChips(Arrays.asList(GENRES_ARRAY));
             }
         });
     }
 
     private void populateGenreChips(List<String> genres) {
         binding.chipGroupGenre.removeAllViews();
-
         Chip allChip = new Chip(this);
         allChip.setText("All Genres");
         allChip.setCheckable(true);
@@ -121,8 +222,6 @@ public class CatalogActivity extends AppCompatActivity {
         allChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 viewModel.setGenreFilter("");
-                // Можно вызвать loadAnime() если хотим подгрузить с сервера без фильтра
-                // loadAnime(); 
             }
         });
         binding.chipGroupGenre.addView(allChip);
@@ -134,8 +233,6 @@ public class CatalogActivity extends AppCompatActivity {
             chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isChecked) {
                     viewModel.setGenreFilter(genre);
-                    // Опционально: загружаем с сервера конкретный жанр
-                    // loadAnime();
                 }
             });
             binding.chipGroupGenre.addView(chip);
@@ -143,14 +240,12 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
     private void observeSearchResults() {
-        // Подписываемся на getSearchResults(), который автоматически фильтрует данные из БД
-        // на основе введенного текста и выбранного жанра
         viewModel.getSearchResults().observe(this, animeList -> {
             if (animeList != null && !animeList.isEmpty()) {
                 adapter.setAnimeList(animeList);
                 showEmpty(false);
             } else {
-                adapter.setAnimeList(java.util.Collections.emptyList());
+                adapter.setAnimeList(new ArrayList<>());
                 showEmpty(true);
             }
         });
@@ -162,7 +257,6 @@ public class CatalogActivity extends AppCompatActivity {
                 showLoading(true);
             } else if (resource.getStatus() == Resource.Status.SUCCESS) {
                 showLoading(false);
-                // Данные обновятся через observeSearchResults
             } else if (resource.getStatus() == Resource.Status.ERROR) {
                 showLoading(false);
                 showError(resource.getMessage());
